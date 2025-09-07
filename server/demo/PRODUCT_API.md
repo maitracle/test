@@ -94,7 +94,45 @@ PATCH /api/products/{id}/deactivate
 - Username: sa
 - Password: (비어있음)
 
+## Cart API
+
+### 1. 장바구니 총 가격 계산
+```
+POST /api/cart/calculate
+Content-Type: application/json
+
+{
+  "items": [
+    {
+      "productId": 1,
+      "quantity": 2
+    },
+    {
+      "productId": 2,
+      "quantity": 1
+    }
+  ]
+}
+```
+
+### 2. 장바구니 유효성 검사
+```
+POST /api/cart/validate
+Content-Type: application/json
+
+{
+  "items": [
+    {
+      "productId": 1,
+      "quantity": 2
+    }
+  ]
+}
+```
+
 ## 실행 방법
 1. 프로젝트를 빌드합니다: `./gradlew build`
 2. 애플리케이션을 실행합니다: `./gradlew bootRun`
-3. API 테스트: http://localhost:8080/api/products 
+3. API 테스트: 
+   - 제품 API: http://localhost:8080/api/products
+   - 장바구니 API: http://localhost:8080/api/cart/calculate 
