@@ -24,6 +24,7 @@ import io.kotest.matchers.shouldNotBe
 import io.kotest.matchers.collections.shouldContain
 import io.kotest.matchers.string.shouldContain
 import io.kotest.assertions.throwables.shouldThrow
+import java.math.BigDecimal
 import java.time.LocalDateTime
 
 class PromotionTest : DescribeSpec({
@@ -141,7 +142,7 @@ class PromotionTest : DescribeSpec({
             val discount = promotion.calculateDiscount(cart, user)
             
             // Then
-            discount.amount.amount shouldBe Money.of(1000L).amount // 10% 할인 (10000 * 0.1 = 1000)
+            discount.amount.amount shouldBe Money.of(BigDecimal("1000.00")).amount // 10% 할인 (10000 * 0.1 = 1000)
         }
         
         it("적용 불가능한 프로모션의 할인은 0원이어야 한다") {
@@ -375,7 +376,7 @@ class PromotionTest : DescribeSpec({
             // Then
             stringRepresentation shouldContain "Promotion"
             stringRepresentation shouldContain "테스트 프로모션"
-            stringRepresentation shouldContain "PERCENTAGE_DISCOUNT"
+            stringRepresentation shouldContain "퍼센트 할인"
         }
     }
 })

@@ -137,7 +137,7 @@ class DiscountPercentageTest : DescribeSpec({
             val result = discountPercentage * money
             
             // Then
-            result.amount shouldBe BigDecimal.valueOf(1000)
+            result.amount shouldBe BigDecimal("1000.00")
         }
         
         it("0% 할인을 적용하면 0원이어야 한다") {
@@ -149,7 +149,7 @@ class DiscountPercentageTest : DescribeSpec({
             val result = discountPercentage * money
             
             // Then
-            result.amount shouldBe BigDecimal.ZERO
+            result.amount shouldBe BigDecimal("0.00")
         }
         
         it("100% 할인을 적용하면 전체 금액이어야 한다") {
@@ -161,7 +161,7 @@ class DiscountPercentageTest : DescribeSpec({
             val result = discountPercentage * money
             
             // Then
-            result.amount shouldBe BigDecimal.valueOf(10000)
+            result.amount shouldBe BigDecimal("10000.00")
         }
         
         it("할인 퍼센트를 비교할 수 있어야 한다") {
