@@ -3,7 +3,7 @@ import './ProductList.css';
 
 const API_BASE_URL = 'http://localhost:8080';
 
-const ProductList = () => {
+const ProductList = ({ cartItems, onAddToCart, onUpdateQuantity }) => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -37,6 +37,26 @@ const ProductList = () => {
       style: 'currency',
       currency: 'KRW'
     }).format(price);
+  };
+
+  const getCartQuantity = (productId) => {
+    const cartItem = cartItems.find(item => item.id === productId);
+    return cartItem ? cartItem.quantity : 0;
+  };
+
+  const handleQuantityChange = (product, newQuantity) => {
+    if (newQuantity === 0) {
+      // 카트에서 제거
+      onUpdateQuantity(product.id, 0);
+    } else {
+      // 카트에 추가하거나 수량 업데이트
+      const currentQuantity = getCartQuantity(product.id);
+      if (currentQuantity === 0) {
+        onAddToCart(product);
+      } else {
+        onUpdateQuantity(product.id, newQuantity);
+      }
+    }
   };
 
   if (loading) {
@@ -120,6 +140,38 @@ const ProductList = () => {
                     <span className="status-inactive">판매중단</span>
                   )}
                 </div>
+                
+                {product.isActive && (
+                  <div className="product-cart-controls">
+                    <div className="quantity-controls">
+                      <button 
+                        className="quantity-btn minus"
+                        onClick={() => handleQuantityChange(product, getCartQuantity(product.id) - 1)}
+                        disabled={getCartQuantity(product.id) <= 0}
+                      >
+                        -
+                      </button>
+                      
+                      <span className="quantity-display">
+                        {getCartQuantity(product.id)}
+                      </span>
+                      
+                      <button 
+                        className="quantity-btn plus"
+                        onClick={() => handleQuantityChange(product, getCartQuantity(product.id) + 1)}
+                        disabled={getCartQuantity(product.id) >= product.stock}
+                      >
+                        +
+                      </button>
+                    </div>
+                    
+                    {getCartQuantity(product.id) > 0 && (
+                      <div className="cart-status">
+                        장바구니에 {getCartQuantity(product.id)}개 담김
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           ))}
