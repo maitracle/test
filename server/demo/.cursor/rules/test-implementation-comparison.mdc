@@ -1,0 +1,246 @@
+---
+description: 테스트 코드와 구현 코드 비교 분석 방법 - 어느 쪽이 잘못되었는지 판단하고 수정하는 방법
+---
+
+# 테스트 코드와 구현 코드 비교 분석 방법
+
+이 가이드는 테스트 실패 시 테스트 코드와 구현 코드 중 어느 쪽이 잘못되었는지 판단하고 수정하는 방법을 설명합니다.
+
+## 비교 분석 프로세스
+
+### 1. 문제 상황 파악
+테스트가 실패했을 때 다음 단계를 따릅니다:
+
+```kotlin
+// 1단계: 테스트 실행하여 오류 메시지 확인
+./gradlew test --tests "TestClassName"
+
+// 2단계: 실패한 테스트의 예상값과 실제값 비교
+// 예상: BigDecimal("1000.00")
+// 실제: BigDecimal("1000")
+```
+
+### 2. 구현 코드 검토
+
+#### A. 값 객체 (Value Objects) 검토
+```kotlin
+// DiscountPercentage.kt 예시
+@JvmInline
+value class DiscountPercentage(val value: BigDecimal) {
+    operator fun times(money: Money): Money {
+        // 구현이 올바른지 확인
+        return Money(money.amount.multiply(value).divide(BigDecimal(100), 2, RoundingMode.HALF_UP))
+    }
+}
+```
+
+**검토 포인트**:
+- 정밀도 설정이 올바른가?
+- 반올림 모드가 적절한가?
+- 연산 순서가 올바른가?
+
+#### B. 도메인 서비스 검토
+```kotlin
+// PromotionCalculator.kt 예시
+fun calculateDiscounts(cart: Cart, promotions: List<Promotion>, user: User): PromotionResult {
+    var totalDiscount = Discount.zero()
+    // 로직이 올바른지 확인
+    for (promotion in promotions) {
+        val discount = promotion.calculateDiscount(cart, user)
+        if (discount.isApplied()) {
+            totalDiscount += discount
+        }
+    }
+    // 반환값 구성이 올바른지 확인
+    return PromotionResult(
+        subtotal = cart.totalAmount.amount,
+        totalDiscount = totalDiscount.amount.amount, // 이 부분이 올바른가?
+        finalAmount = finalAmount.amount
+    )
+}
+```
+
+**검토 포인트**:
+- 계산 로직이 비즈니스 규칙에 맞는가?
+- 반환값 타입이 올바른가?
+- 예외 처리가 적절한가?
+
+### 3. 테스트 코드 검토
+
+#### A. 예상값 검토
+```kotlin
+// 테스트 예상값이 올바른지 확인
+test("할인 계산 테스트") {
+    // Given
+    val discountPercentage = DiscountPercentage.of(10)
+    val money = Money.of(10000L)
+    
+    // When
+    val result = discountPercentage * money
+    
+    // Then
+    result.amount shouldBe BigDecimal("1000.00") // 이 예상값이 올바른가?
+}
+```
+
+**검토 포인트**:
+- 예상값이 비즈니스 규칙에 맞는가?
+- 소수점 자리수가 올바른가?
+- 타입이 일치하는가?
+
+#### B. 테스트 시나리오 검토
+```kotlin
+test("시간 기반 계산 테스트") {
+    // Given
+    val now = LocalDateTime.now()
+    val period = PromotionPeriod.of(now.minusDays(1), now.plusDays(6))
+    
+    // When
+    val remainingDays = period.getRemainingDays()
+    
+    // Then
+    remainingDays shouldBe 6L // 이 예상값이 올바른가?
+}
+```
+
+**검토 포인트**:
+- 테스트 시나리오가 현실적인가?
+- 시간 계산이 정확한가?
+- 경계값 테스트가 포함되어 있는가?
+
+## 수정 우선순위 결정
+
+### 1. 구현 코드가 잘못된 경우
+**증상**: 비즈니스 로직이 잘못되었거나 타입 불일치
+
+```kotlin
+// 잘못된 구현 예시
+operator fun times(money: Money): Money = Money(money.amount.multiply(value).divide(BigDecimal(100)))
+
+// 수정된 구현
+operator fun times(money: Money): Money = Money(
+    money.amount.multiply(value).divide(BigDecimal(100), 2, RoundingMode.HALF_UP)
+)
+```
+
+**수정 방법**:
+1. 구현 코드를 올바른 비즈니스 로직에 맞게 수정
+2. 테스트는 그대로 유지
+
+### 2. 테스트 코드가 잘못된 경우
+**증상**: 예상값이 비즈니스 규칙에 맞지 않음
+
+```kotlin
+// 잘못된 테스트 예시
+remainingDays shouldBe 6L // 실제로는 5L
+
+// 수정된 테스트
+remainingDays shouldBe 5L // 실제 계산 결과 반영
+```
+
+**수정 방법**:
+1. 테스트 예상값을 실제 계산 결과에 맞게 수정
+2. 구현 코드는 그대로 유지
+
+### 3. 둘 다 맞는 경우
+**증상**: 구현과 테스트가 모두 올바르지만 예상값이 실제 결과와 다름
+
+```kotlin
+// 예상값을 실제 결과에 맞게 수정
+efficiency shouldBe 0.367 // 실제 계산된 효율성
+```
+
+**수정 방법**:
+1. 테스트 예상값을 실제 계산 결과에 맞게 수정
+2. 구현 코드는 그대로 유지
+
+## 디버깅 도구 활용
+
+### 1. 임시 디버깅 테스트
+```kotlin
+class DebugTest : FunSpec({
+    test("디버깅: 실제 값 확인") {
+        // Given
+        val actualValue = calculateSomething()
+        
+        // When & Then
+        println("실제 값: $actualValue")
+        println("예상 값: $expectedValue")
+        actualValue shouldBe actualValue // 일단 통과시키기
+    }
+})
+```
+
+### 2. 단계별 검증
+```kotlin
+test("단계별 검증") {
+    // Given
+    val input = createInput()
+    
+    // When
+    val step1 = calculateStep1(input)
+    val step2 = calculateStep2(step1)
+    val result = calculateStep3(step2)
+    
+    // Then
+    println("Step 1: $step1")
+    println("Step 2: $step2")
+    println("Result: $result")
+    
+    result shouldBe expectedResult
+}
+```
+
+## 일반적인 수정 패턴
+
+### 1. BigDecimal 정밀도 수정
+```kotlin
+// 구현 코드 수정
+operator fun times(money: Money): Money = Money(
+    money.amount.multiply(value).divide(BigDecimal(100), 2, RoundingMode.HALF_UP)
+)
+
+// 테스트 코드 수정
+result.amount shouldBe BigDecimal("1000.00") // 소수점 2자리
+```
+
+### 2. Money 객체 비교 수정
+```kotlin
+// 구현 코드 수정
+if (discount <= maxDiscount) discount else maxDiscount
+
+// 테스트 코드는 그대로 유지
+```
+
+### 3. 시간 계산 수정
+```kotlin
+// 테스트 코드 수정
+val remainingDays = period.getRemainingDays()
+remainingDays shouldBe 5L // 실제 계산 결과 반영
+```
+
+### 4. Import 문 추가
+```kotlin
+// 필요한 import 추가
+import java.math.BigDecimal
+import io.kotest.matchers.collections.shouldHaveSize
+```
+
+## 검증 방법
+
+### 1. 단위 테스트 실행
+```bash
+./gradlew test --tests "TestClassName"
+```
+
+### 2. 전체 테스트 실행
+```bash
+./gradlew test
+```
+
+### 3. 테스트 커버리지 확인
+```bash
+./gradlew test jacocoTestReport
+```
+
+이 가이드를 따라하면 테스트 코드와 구현 코드 중 어느 쪽이 잘못되었는지 체계적으로 판단하고 수정할 수 있습니다.

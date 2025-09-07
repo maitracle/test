@@ -1,0 +1,342 @@
+---
+description: Kotest를 사용한 Kotlin 테스트 코드 작성 모범 사례 - FunSpec, DescribeSpec 사용법과 매처 활용법
+globs: *Test.kt
+---
+
+# Kotest 테스트 코드 작성 모범 사례
+
+이 가이드는 Kotlin Spring Boot 프로젝트에서 Kotest를 사용한 테스트 코드 작성 모범 사례를 설명합니다.
+
+## 테스트 구조 선택
+
+### 1. FunSpec 사용
+```kotlin
+class UserTest : FunSpec({
+    context("사용자 생성") {
+        test("유효한 이메일로 사용자를 생성할 수 있어야 한다") {
+            // Given
+            val email = Email("test@example.com")
+            
+            // When
+            val user = User.createNew(email)
+            
+            // Then
+            user.email shouldBe email
+        }
+    }
+})
+```
+
+### 2. DescribeSpec 사용
+```kotlin
+class PromotionTest : DescribeSpec({
+    describe("Promotion 생성") {
+        it("유효한 프로모션을 생성할 수 있어야 한다") {
+            // Given
+            val promotion = createTestPromotion()
+            
+            // When & Then
+            promotion.isActive shouldBe true
+        }
+    }
+})
+```
+
+## 매처 활용법
+
+### 1. 기본 매처
+```kotlin
+import io.kotest.matchers.shouldBe
+import io.kotest.matchers.shouldNotBe
+import io.kotest.matchers.shouldContain
+import io.kotest.matchers.collections.shouldHaveSize
+import io.kotest.assertions.throwables.shouldThrow
+
+// 값 비교
+result shouldBe expectedValue
+result shouldNotBe unexpectedValue
+
+// 컬렉션 검증
+list shouldHaveSize 3
+list shouldContain "item1"
+
+// 예외 검증
+shouldThrow<IllegalArgumentException> {
+    invalidOperation()
+}
+```
+
+### 2. BigDecimal 매처
+```kotlin
+import java.math.BigDecimal
+
+// BigDecimal 비교 시 정확한 소수점 자리수 사용
+result.amount shouldBe BigDecimal("1000.00")
+result.amount shouldNotBe BigDecimal("1000")
+```
+
+## 테스트 데이터 생성
+
+### 1. 팩토리 메서드 활용
+```kotlin
+// 테스트용 헬퍼 함수들
+private fun createTestCart(): Cart {
+    val product = createTestProduct()
+    return Cart.createEmpty(CartId.of(1L), UserId.of(1L)).addItem(product, Quantity.of(1))
+}
+
+private fun createTestProduct(): Product {
+    return Product.createNew(
+        id = ProductId.of(1L),
+        name = "테스트 상품",
+        description = "테스트용 상품입니다",
+        price = Price.of(Money.of(10000L)),
+        stock = Stock.of(100),
+        category = "테스트 카테고리",
+        brand = "테스트 브랜드"
+    )
+}
+
+private fun createTestUser(): User {
+    return User.createExistingUser(
+        id = UserId.of(1L),
+        email = Email("test@example.com"),
+        membershipLevel = MembershipLevel.REGULAR,
+        isNewCustomer = false,
+        createdAt = LocalDateTime.now()
+    )
+}
+```
+
+### 2. 테스트 데이터 빌더 패턴
+```kotlin
+class TestDataBuilder {
+    fun buildCart(): Cart = createTestCart()
+    fun buildProduct(): Product = createTestProduct()
+    fun buildUser(): User = createTestUser()
+    
+    fun buildCartWithItems(count: Int): Cart {
+        var cart = Cart.createEmpty(CartId.of(1L), UserId.of(1L))
+        repeat(count) {
+            cart = cart.addItem(createTestProduct(), Quantity.of(1))
+        }
+        return cart
+    }
+}
+```
+
+## 테스트 시나리오 작성
+
+### 1. Given-When-Then 패턴
+```kotlin
+test("할인 계산 테스트") {
+    // Given
+    val discountPercentage = DiscountPercentage.of(10)
+    val money = Money.of(10000L)
+    
+    // When
+    val result = discountPercentage * money
+    
+    // Then
+    result.amount shouldBe BigDecimal("1000.00")
+}
+```
+
+### 2. 경계값 테스트
+```kotlin
+context("경계값 테스트") {
+    test("최소 금액 조건 테스트") {
+        // Given
+        val minAmount = Money.of(10000L)
+        val cart = createTestCartWithAmount(minAmount)
+        
+        // When
+        val isEligible = promotion.isEligibleForCart(cart)
+        
+        // Then
+        isEligible shouldBe true
+    }
+    
+    test("최소 금액 미만 테스트") {
+        // Given
+        val minAmount = Money.of(10000L)
+        val cart = createTestCartWithAmount(Money.of(9999L))
+        
+        // When
+        val isEligible = promotion.isEligibleForCart(cart)
+        
+        // Then
+        isEligible shouldBe false
+    }
+}
+```
+
+### 3. 예외 상황 테스트
+```kotlin
+context("예외 상황 테스트") {
+    test("잘못된 입력으로 예외가 발생해야 한다") {
+        // Given & When & Then
+        shouldThrow<IllegalArgumentException> {
+            DiscountPercentage.of(-10)
+        }
+    }
+    
+    test("null 입력으로 예외가 발생해야 한다") {
+        // Given & When & Then
+        shouldThrow<IllegalArgumentException> {
+            Money.of(null)
+        }
+    }
+}
+```
+
+## 시간 기반 테스트
+
+### 1. 상대적 시간 사용
+```kotlin
+test("프로모션 기간 테스트") {
+    // Given
+    val now = LocalDateTime.now()
+    val period = PromotionPeriod.of(now.minusDays(1), now.plusDays(7))
+    
+    // When
+    val remainingDays = period.getRemainingDays()
+    
+    // Then
+    // 실제 계산 결과를 반영한 예상값 사용
+    remainingDays shouldBe 5L
+}
+```
+
+### 2. 고정 시간 사용
+```kotlin
+test("고정 시간 테스트") {
+    // Given
+    val fixedTime = LocalDateTime.of(2024, 1, 1, 0, 0)
+    val period = PromotionPeriod.of(
+        LocalDateTime.of(2024, 1, 1, 0, 0),
+        LocalDateTime.of(2024, 1, 8, 0, 0)
+    )
+    
+    // When
+    val totalDays = period.getTotalDays()
+    
+    // Then
+    totalDays shouldBe 7L
+}
+```
+
+## 테스트 정리 및 유지보수
+
+### 1. 테스트 그룹화
+```kotlin
+class PromotionTest : FunSpec({
+    context("프로모션 생성") {
+        // 생성 관련 테스트들
+    }
+    
+    context("프로모션 적용") {
+        // 적용 관련 테스트들
+    }
+    
+    context("프로모션 계산") {
+        // 계산 관련 테스트들
+    }
+})
+```
+
+### 2. 공통 설정
+```kotlin
+class BaseTest : FunSpec({
+    beforeTest {
+        // 각 테스트 전에 실행될 설정
+    }
+    
+    afterTest {
+        // 각 테스트 후에 실행될 정리
+    }
+})
+```
+
+### 3. 테스트 데이터 정리
+```kotlin
+class TestDataCleanup : FunSpec({
+    afterEach {
+        // 테스트 데이터 정리
+        cleanupTestData()
+    }
+})
+```
+
+## 성능 테스트
+
+### 1. 대용량 데이터 테스트
+```kotlin
+test("대용량 장바구니 처리 테스트") {
+    // Given
+    val cart = createTestCartWithItems(1000)
+    
+    // When
+    val startTime = System.currentTimeMillis()
+    val result = promotionCalculator.calculateDiscounts(cart, promotions, user)
+    val endTime = System.currentTimeMillis()
+    
+    // Then
+    result shouldNotBe null
+    (endTime - startTime) shouldBeLessThan 1000L // 1초 이내
+}
+```
+
+### 2. 메모리 사용량 테스트
+```kotlin
+test("메모리 사용량 테스트") {
+    // Given
+    val runtime = Runtime.getRuntime()
+    val beforeMemory = runtime.totalMemory() - runtime.freeMemory()
+    
+    // When
+    val result = processLargeData()
+    
+    // Then
+    val afterMemory = runtime.totalMemory() - runtime.freeMemory()
+    val memoryUsed = afterMemory - beforeMemory
+    memoryUsed shouldBeLessThan 100_000_000L // 100MB 이내
+}
+```
+
+## 테스트 문서화
+
+### 1. 의미 있는 테스트명
+```kotlin
+// 좋은 예
+test("VIP 회원이 일반 회원 프로모션에 자격이 있어야 한다")
+
+// 나쁜 예
+test("test1")
+```
+
+### 2. 테스트 설명 추가
+```kotlin
+test("할인 계산 테스트") {
+    // 이 테스트는 10% 할인을 적용했을 때
+    // 10,000원 상품에 대해 1,000원 할인이 적용되는지 확인합니다
+}
+```
+
+### 3. 테스트 결과 검증
+```kotlin
+test("프로모션 효율성 평가") {
+    // Given
+    val promotion = createTestPromotion()
+    val cart = createTestCart()
+    val user = createTestUser()
+    
+    // When
+    val efficiency = ruleEngine.evaluatePromotionEfficiency(promotion, cart, user)
+    
+    // Then
+    efficiency shouldBe 0.367 // 실제 계산된 효율성 (약 36.7%)
+}
+```
+
+이 가이드를 따라하면 Kotest를 사용한 효과적이고 유지보수 가능한 테스트 코드를 작성할 수 있습니다.
