@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import logo from './logo.svg';
 import './App.css';
 import HelloPage from './HelloPage';
+import ProductList from './ProductList';
 
 function App() {
   return (
@@ -12,6 +13,7 @@ function App() {
           <ul>
             <li><Link to="/">홈</Link></li>
             <li><Link to="/hello">Hello 페이지</Link></li>
+            <li><Link to="/products">상품 목록</Link></li>
           </ul>
         </nav>
         
@@ -33,6 +35,7 @@ function App() {
             </header>
           } />
           <Route path="/hello" element={<HelloPage />} />
+          <Route path="/products" element={<ProductList />} />
         </Routes>
       </div>
     </Router>
