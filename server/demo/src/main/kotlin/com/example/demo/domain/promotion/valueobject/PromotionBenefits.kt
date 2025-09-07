@@ -36,10 +36,10 @@ data class PromotionBenefits(
             discountPercentage != null -> {
                 val discount = discountPercentage * cart.totalAmount
                 val maxDiscount = maxDiscountAmount ?: discount
-                Discount(if (discount.amount <= maxDiscount.amount) discount else maxDiscount)
+                Discount(if (discount <= maxDiscount) discount else maxDiscount)
             }
             discountAmount != null -> {
-                Discount(if (discountAmount.amount <= cart.totalAmount.amount) discountAmount else cart.totalAmount)
+                Discount(if (discountAmount <= cart.totalAmount) discountAmount else cart.totalAmount)
             }
             else -> Discount.zero()
         }

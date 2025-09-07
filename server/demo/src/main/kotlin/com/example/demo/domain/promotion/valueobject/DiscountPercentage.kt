@@ -23,7 +23,7 @@ value class DiscountPercentage(val value: BigDecimal) {
      * @param money 원본 금액
      * @return 할인된 금액
      */
-    operator fun times(money: Money): Money = Money(money.amount * (value / BigDecimal(100)))
+    operator fun times(money: Money): Money = Money(money.amount.multiply(value).divide(BigDecimal(100), 2, java.math.RoundingMode.HALF_UP))
     
     /**
      * 할인 퍼센트를 비교합니다.

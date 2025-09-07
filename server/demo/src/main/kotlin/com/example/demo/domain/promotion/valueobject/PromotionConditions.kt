@@ -16,7 +16,8 @@ data class PromotionConditions(
     val targetCategory: String? = null,
     val minCartAmount: Money? = null,
     val minQuantity: Quantity? = null,
-    val targetUserLevel: MembershipLevel? = null
+    val targetUserLevel: MembershipLevel? = null,
+    val isNewCustomerOnly: Boolean = false
 ) {
     
     /**
@@ -30,7 +31,8 @@ data class PromotionConditions(
         return isCategoryConditionSatisfied(cart) &&
                isCartAmountConditionSatisfied(cart) &&
                isQuantityConditionSatisfied(cart) &&
-               isUserLevelConditionSatisfied(user)
+               isUserLevelConditionSatisfied(user) &&
+               isNewCustomerConditionSatisfied(user)
     }
     
     /**
@@ -71,6 +73,16 @@ data class PromotionConditions(
      */
     private fun isUserLevelConditionSatisfied(user: User): Boolean {
         return targetUserLevel == null || user.membershipLevel >= targetUserLevel
+    }
+    
+    /**
+     * 신규 고객 조건을 확인합니다.
+     * 
+     * @param user 사용자
+     * @return 신규 고객 조건 충족 여부
+     */
+    private fun isNewCustomerConditionSatisfied(user: User): Boolean {
+        return !isNewCustomerOnly || user.isNewCustomer
     }
     
     /**
@@ -139,6 +151,7 @@ data class PromotionConditions(
         minCartAmount?.let { conditions.add("최소 주문 금액: ${it.amount}원") }
         minQuantity?.let { conditions.add("최소 수량: ${it.value}개") }
         targetUserLevel?.let { conditions.add("사용자 등급: ${it.displayName}") }
+        if (isNewCustomerOnly) conditions.add("신규 고객 전용")
         
         return if (conditions.isEmpty()) "조건 없음" else conditions.joinToString(", ")
     }

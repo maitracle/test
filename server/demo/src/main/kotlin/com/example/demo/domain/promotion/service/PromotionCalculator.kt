@@ -5,6 +5,7 @@ import com.example.demo.domain.promotion.model.Promotion
 import com.example.demo.domain.promotion.valueobject.Discount
 import com.example.demo.domain.user.model.User
 import java.math.BigDecimal
+import java.math.RoundingMode
 
 /**
  * 적용된 프로모션 정보
@@ -49,7 +50,7 @@ data class PromotionResult(
      */
     fun getDiscountRatio(): Double {
         return if (subtotal > BigDecimal.ZERO) {
-            totalDiscount.divide(subtotal, 4, BigDecimal.ROUND_HALF_UP).toDouble()
+            totalDiscount.divide(subtotal, 4, RoundingMode.HALF_UP).toDouble()
         } else {
             0.0
         }
