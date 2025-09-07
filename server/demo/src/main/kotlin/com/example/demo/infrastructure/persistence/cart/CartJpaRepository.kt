@@ -102,7 +102,8 @@ interface CartItemJpaRepository : JpaRepository<CartItemEntity, Long> {
      * @param cartId 장바구니 ID
      * @return 해당 장바구니의 아이템 엔티티 목록
      */
-    fun findByCartId(cartId: Long): List<CartItemEntity>
+    @Query("SELECT ci FROM CartItemEntity ci WHERE ci.cart.id = :cartId")
+    fun findByCartId(@Param("cartId") cartId: Long): List<CartItemEntity>
     
     /**
      * 상품 ID로 장바구니 아이템들을 조회합니다.
@@ -117,7 +118,8 @@ interface CartItemJpaRepository : JpaRepository<CartItemEntity, Long> {
      * @param productId 상품 ID
      * @return 장바구니 아이템 엔티티, 없으면 null
      */
-    fun findByCartIdAndProductId(cartId: Long, productId: Long): CartItemEntity?
+    @Query("SELECT ci FROM CartItemEntity ci WHERE ci.cart.id = :cartId AND ci.productId = :productId")
+    fun findByCartIdAndProductId(@Param("cartId") cartId: Long, @Param("productId") productId: Long): CartItemEntity?
     
     /**
      * 특정 수량 이상의 장바구니 아이템들을 조회합니다.
@@ -145,6 +147,6 @@ interface CartItemJpaRepository : JpaRepository<CartItemEntity, Long> {
      * @param cartId 장바구니 ID
      * @return 해당 장바구니의 아이템 수
      */
-    @Query("SELECT COUNT(ci) FROM CartItemEntity ci WHERE ci.cartId = :cartId")
+    @Query("SELECT COUNT(ci) FROM CartItemEntity ci WHERE ci.cart.id = :cartId")
     fun countItemsByCartId(@Param("cartId") cartId: Long): Long
 }

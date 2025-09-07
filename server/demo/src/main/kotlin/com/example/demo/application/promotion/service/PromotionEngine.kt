@@ -16,10 +16,12 @@ import org.springframework.stereotype.Service
  */
 @Service
 class PromotionEngine(
-    private val promotionRepository: PromotionRepository,
-    private val promotionCalculator: PromotionCalculator,
-    private val promotionRuleEngine: PromotionRuleEngine
+    private val promotionRepository: PromotionRepository
 ) {
+    
+    // 도메인 서비스들을 직접 인스턴스화 (클린 아키텍처 원칙 준수)
+    private val promotionCalculator = PromotionCalculator()
+    private val promotionRuleEngine = PromotionRuleEngine()
     
     /**
      * 장바구니와 사용자에 대해 활성 프로모션을 적용합니다.
