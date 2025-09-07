@@ -1,0 +1,339 @@
+---
+description: 비즈니스 중심 개발을 위한 Domain-Driven Design 패턴 및 규칙
+---
+
+# Domain-Driven Design 구현 가이드
+
+이 프로젝트는 비즈니스 중심의 유지보수 가능한 소프트웨어를 만들기 위해 Domain-Driven Design (DDD) 원칙을 따릅니다.
+
+## 핵심 DDD 개념
+
+### 도메인 모델
+도메인 모델은 핵심 비즈니스 로직과 규칙을 나타냅니다. 다음을 포함해야 합니다:
+- **비즈니스 중심**: 실제 비즈니스 개념을 반영
+- **자체 완결적**: 모든 필요한 비즈니스 로직을 포함
+- **언어 풍부**: 비즈니스 용어 사용 (보편 언어)
+- **행동 풍부**: 단순한 데이터 컨테이너가 아닌 행동을 가진 활성 객체
+
+### 값 객체 (Value Objects)
+도메인의 설명적 측면을 나타내는 불변 객체:
+- **불변**: 생성 후 변경할 수 없음
+- **값으로 동등성**: 두 값 객체의 값이 같으면 동등
+- **자체 검증**: 검증 로직을 포함
+- **식별자 없음**: ID가 아닌 값으로 구분
+
+[Money.kt](mdc:src/main/kotlin/com/example/demo/domain/common/valueobject/Money.kt)의 예시:
+```kotlin
+@JvmInline
+value class Money(val amount: BigDecimal) {
+    init {
+        require(amount >= BigDecimal.ZERO) { "Money amount cannot be negative" }
+    }
+    
+    operator fun plus(other: Money): Money = Money(amount.add(other.amount))
+    operator fun minus(other: Money): Money = Money(amount.subtract(other.amount))
+}
+```
+
+### 엔티티 (Entities)
+고유한 식별자와 생명주기를 가진 객체:
+- **식별자 보유**: 고유한 ID로 구분
+- **가변**: 시간에 따라 상태 변경 가능
+- **비즈니스 행동**: 비즈니스 로직과 규칙을 포함
+- **생명주기 관리**: 생성, 수정, 삭제 가능
+
+[User.kt](mdc:src/main/kotlin/com/example/demo/domain/user/model/User.kt)의 예시:
+```kotlin
+data class User(
+    val id: UserId,
+    val email: Email,
+    val membershipLevel: MembershipLevel,
+    val isNewCustomer: Boolean,
+    val createdAt: LocalDateTime
+) {
+    fun isEligibleForPromotion(requiredLevel: MembershipLevel?): Boolean {
+        return requiredLevel?.let { targetLevel ->
+            membershipLevel.isHigherThanOrEqualTo(targetLevel)
+        } ?: true
+    }
+}
+```
+
+## 도메인 레이어 구조
+
+### 패키지 구성
+```
+domain/
+├── common/
+│   └── valueobject/          # 공유 값 객체
+├── user/
+│   ├── model/               # 사용자 도메인 모델
+│   └── valueobject/         # 사용자 전용 값 객체
+├── product/
+│   ├── model/               # 상품 도메인 모델
+│   └── valueobject/         # 상품 전용 값 객체
+└── promotion/
+    ├── model/               # 프로모션 도메인 모델
+    └── valueobject/         # 프로모션 전용 값 객체
+```
+
+### 값 객체 구현 패턴
+
+#### 타입 안전성
+성능과 타입 안전성을 위해 `@JvmInline value class` 사용:
+```kotlin
+@JvmInline
+value class UserId(val value: Long) {
+    init {
+        require(value > 0) { "UserId must be positive" }
+    }
+}
+```
+
+#### 검증
+생성자에 비즈니스 규칙 포함:
+```kotlin
+@JvmInline
+value class Email(val value: String) {
+    init {
+        require(value.isNotBlank()) { "Email cannot be blank" }
+        require(value.matches(EMAIL_REGEX)) { "Invalid email format" }
+        require(value.length <= MAX_EMAIL_LENGTH) { "Email length cannot exceed $MAX_EMAIL_LENGTH characters" }
+    }
+}
+```
+
+#### 팩토리 메서드
+안전한 생성 메서드 제공:
+```kotlin
+companion object {
+    fun of(value: String): Email = Email(value)
+    fun safeOf(value: String?): Email? = value?.let { Email(it) }
+    fun isValid(value: String): Boolean = value.matches(EMAIL_REGEX)
+}
+```
+
+### 엔티티 구현 패턴
+
+#### 비즈니스 로직 캡슐화
+비즈니스 규칙을 도메인 모델 내부에 유지:
+```kotlin
+data class User(
+    val id: UserId,
+    val email: Email,
+    val membershipLevel: MembershipLevel,
+    val isNewCustomer: Boolean,
+    val createdAt: LocalDateTime
+) {
+    fun isEligibleForPromotion(requiredLevel: MembershipLevel?): Boolean {
+        return requiredLevel?.let { targetLevel ->
+            membershipLevel.isHigherThanOrEqualTo(targetLevel)
+        } ?: true
+    }
+    
+    fun upgradeMembership(newLevel: MembershipLevel): User {
+        require(newLevel.isHigherThan(membershipLevel)) { 
+            "New membership level must be higher than current level" 
+        }
+        return copy(membershipLevel = newLevel)
+    }
+}
+```
+
+#### 팩토리 메서드
+의미 있는 생성 메서드 제공:
+```kotlin
+companion object {
+    fun createNewUser(id: UserId, email: Email): User {
+        return User(
+            id = id,
+            email = email,
+            membershipLevel = MembershipLevel.NEW,
+            isNewCustomer = true,
+            createdAt = LocalDateTime.now()
+        )
+    }
+}
+```
+
+## 비즈니스 규칙 구현
+
+### 검증 규칙
+도메인 경계에서 검증 구현:
+```kotlin
+@JvmInline
+value class Quantity(val value: Int) {
+    init {
+        require(value > 0) { "Quantity must be positive" }
+    }
+}
+```
+
+### 비즈니스 로직 규칙
+복잡한 비즈니스 규칙을 도메인 메서드에 캡슐화:
+```kotlin
+fun isEligibleForVipPromotion(): Boolean {
+    return membershipLevel.isVipOrHigher()
+}
+
+fun hasBeenMemberForAtLeast(days: Long): Boolean {
+    return getMembershipDurationInDays() >= days
+}
+```
+
+### 상태 전환 규칙
+비즈니스 규칙으로 상태 변경 제어:
+```kotlin
+fun upgradeMembership(newLevel: MembershipLevel): User {
+    require(newLevel.isHigherThan(membershipLevel)) { 
+        "New membership level must be higher than current level" 
+    }
+    return copy(membershipLevel = newLevel)
+}
+```
+
+## 도메인 개념으로서의 열거형
+
+### 비즈니스 열거형
+고정된 비즈니스 개념을 나타내기 위해 열거형 사용:
+```kotlin
+enum class MembershipLevel(
+    val priority: Int,
+    val displayName: String,
+    val description: String
+) {
+    NEW(1, "신규 회원", "가입한 지 30일 이내의 신규 회원"),
+    REGULAR(2, "일반 회원", "기본 회원 등급"),
+    VIP(3, "VIP 회원", "높은 구매 실적을 가진 우수 회원"),
+    PREMIUM(4, "프리미엄 회원", "최고 등급의 특별 회원");
+    
+    fun isHigherThan(other: MembershipLevel): Boolean = this.priority > other.priority
+    fun isVipOrHigher(): Boolean = this >= VIP
+}
+```
+
+## 보편 언어 (Ubiquitous Language)
+
+### 비즈니스 용어
+코드베이스 전체에서 비즈니스 용어를 일관되게 사용:
+- **비즈니스 개념에 한국어**: 신규 회원, VIP 회원, 프로모션 자격
+- **기술적 개념에 영어**: User, Email, MembershipLevel
+- **일관된 명명**: 코드, 테스트, 문서에서 동일한 용어 사용
+
+### 메서드명
+메서드명에서 비즈니스 의도 표현:
+```kotlin
+fun isEligibleForPromotion(requiredLevel: MembershipLevel?): Boolean
+fun upgradeMembership(newLevel: MembershipLevel): User
+fun convertToRegularCustomer(): User
+```
+
+## 도메인 테스트 전략
+
+### 비즈니스 로직 테스트
+비즈니스 규칙과 행동 테스트:
+```kotlin
+context("프로모션 자격 검증") {
+    test("VIP 회원이 일반 회원 프로모션에 자격이 있어야 한다") {
+        // Given
+        val vipUser = User.createExistingUser(
+            id = UserId(1L),
+            email = Email("vip@example.com"),
+            membershipLevel = MembershipLevel.VIP,
+            isNewCustomer = false,
+            createdAt = LocalDateTime.now()
+        )
+        
+        // When
+        val isEligible = vipUser.isEligibleForPromotion(MembershipLevel.REGULAR)
+        
+        // Then
+        isEligible shouldBe true
+    }
+}
+```
+
+### 값 객체 테스트
+검증과 행동 테스트:
+```kotlin
+context("Email 생성") {
+    test("정상적인 이메일로 Email을 생성할 수 있어야 한다") {
+        // Given & When
+        val email = Email("test@example.com")
+        
+        // Then
+        email.value shouldBe "test@example.com"
+    }
+    
+    test("잘못된 형식의 이메일로 Email 생성 시 예외가 발생해야 한다") {
+        // Given & When & Then
+        shouldThrow<IllegalArgumentException> {
+            Email("invalid-email")
+        }
+    }
+}
+```
+
+## 도메인 서비스 패턴
+
+### 도메인 서비스 사용 시기
+다음 경우에 도메인 서비스 사용:
+- 비즈니스 로직이 단일 엔티티에 자연스럽게 속하지 않을 때
+- 여러 엔티티가 협력해야 할 때
+- 복잡한 비즈니스 규칙이 여러 도메인 객체에 걸쳐 있을 때
+
+### 도메인 서비스 구현
+```kotlin
+class PromotionEligibilityService {
+    fun checkEligibility(user: User, promotion: Promotion): Boolean {
+        return when (promotion.type) {
+            PromotionType.NEW_CUSTOMER -> user.isEligibleForNewCustomerPromotion()
+            PromotionType.VIP_ONLY -> user.isEligibleForVipPromotion()
+            PromotionType.MEMBERSHIP_LEVEL -> user.isEligibleForPromotion(promotion.requiredLevel)
+        }
+    }
+}
+```
+
+## 피해야 할 안티 패턴
+
+### 빈약한 도메인 모델
+❌ 데이터만 있는 클래스 생성 금지:
+```kotlin
+// 나쁨: 빈약한 도메인 모델
+data class User(
+    val id: Long,
+    val email: String,
+    val membershipLevel: String
+)
+```
+
+✅ 행동이 풍부한 도메인 모델 생성:
+```kotlin
+// 좋음: 풍부한 도메인 모델
+data class User(
+    val id: UserId,
+    val email: Email,
+    val membershipLevel: MembershipLevel,
+    val isNewCustomer: Boolean,
+    val createdAt: LocalDateTime
+) {
+    fun isEligibleForPromotion(requiredLevel: MembershipLevel?): Boolean
+    fun upgradeMembership(newLevel: MembershipLevel): User
+}
+```
+
+### 원시 타입 중독
+❌ 비즈니스 개념에 원시 타입 사용 금지:
+```kotlin
+// 나쁨: 원시 타입 중독
+fun calculatePrice(amount: Double, quantity: Int): Double
+```
+
+✅ 값 객체 사용:
+```kotlin
+// 좋음: 값 객체
+fun calculatePrice(amount: Money, quantity: Quantity): Money
+```
+
+이 DDD 접근법은 도메인 모델이 비즈니스 개념과 규칙을 정확히 표현하여 소프트웨어를 더 유지보수 가능하고 비즈니스 요구사항에 맞게 만듭니다.

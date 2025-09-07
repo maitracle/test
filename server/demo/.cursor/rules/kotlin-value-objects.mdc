@@ -1,0 +1,350 @@
+---
+description: Kotlin Value Object 구현 패턴 및 모범 사례
+---
+
+# Kotlin Value Objects 구현 가이드
+
+Value Objects는 도메인의 설명적 측면을 나타내는 불변 객체입니다. 이 가이드는 Kotlin에서 타입 안전하고 성능이 좋은 값 객체의 구현 패턴을 다룹니다.
+
+## Value Object 특성
+
+### 핵심 원칙
+- **불변**: 생성 후 변경할 수 없음
+- **값으로 동등성**: 두 값 객체의 값이 같으면 동등
+- **자체 검증**: 검증 로직을 포함
+- **식별자 없음**: ID가 아닌 값으로 구분
+- **타입 안전**: 의미 있는 비즈니스 타입으로 원시 타입 래핑
+
+## 구현 패턴
+
+### 기본 Value Object 구조
+```kotlin
+@JvmInline
+value class ValueObjectName(val value: PrimitiveType) {
+    init {
+        require(validationCondition) { "Error message" }
+    }
+    
+    // 비즈니스 메서드
+    fun businessMethod(): ReturnType = // implementation
+    
+    // 비교 연산자
+    operator fun compareTo(other: ValueObjectName): Int = value.compareTo(other.value)
+    
+    companion object {
+        fun of(value: PrimitiveType): ValueObjectName = ValueObjectName(value)
+        fun safeOf(value: PrimitiveType?): ValueObjectName? = value?.let { ValueObjectName(it) }
+    }
+}
+```
+
+### 코드베이스의 실제 예시
+
+#### Money Value Object
+[Money.kt](mdc:src/main/kotlin/com/example/demo/domain/common/valueobject/Money.kt)에서:
+```kotlin
+@JvmInline
+value class Money(val amount: BigDecimal) {
+    init {
+        require(amount >= BigDecimal.ZERO) { "Money amount cannot be negative" }
+    }
+    
+    operator fun plus(other: Money): Money = Money(amount.add(other.amount))
+    operator fun minus(other: Money): Money = Money(amount.subtract(other.amount))
+    operator fun times(multiplier: BigDecimal): Money = Money(amount.multiply(multiplier).setScale(2, RoundingMode.HALF_UP))
+    operator fun compareTo(other: Money): Int = amount.compareTo(other.amount)
+    
+    companion object {
+        fun zero() = Money(BigDecimal.ZERO)
+        fun of(value: BigDecimal) = Money(value)
+        fun of(value: Long) = Money(BigDecimal(value))
+        fun of(value: Double) = Money(BigDecimal(value).setScale(2, RoundingMode.HALF_UP))
+        fun of(value: String) = Money(BigDecimal(value))
+    }
+}
+```
+
+#### Email Value Object
+[Email.kt](mdc:src/main/kotlin/com/example/demo/domain/user/valueobject/Email.kt)에서:
+```kotlin
+@JvmInline
+value class Email(val value: String) {
+    init {
+        require(value.isNotBlank()) { "Email cannot be blank" }
+        require(value.matches(EMAIL_REGEX)) { "Invalid email format" }
+        require(value.length <= MAX_EMAIL_LENGTH) { "Email length cannot exceed $MAX_EMAIL_LENGTH characters" }
+    }
+    
+    fun isFromDomain(domain: String): Boolean = value.lowercase().endsWith("@${domain.lowercase()}")
+    fun getLocalPart(): String = value.substringBefore("@")
+    fun getDomainPart(): String = value.substringAfter("@")
+    fun toLowerCase(): Email = Email(value.lowercase())
+    
+    companion object {
+        private const val MAX_EMAIL_LENGTH = 254
+        private val EMAIL_REGEX = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$".toRegex()
+        
+        fun of(value: String): Email = Email(value)
+        fun safeOf(value: String?): Email? = value?.let { Email(it) }
+        fun isValid(value: String): Boolean = value.matches(EMAIL_REGEX)
+    }
+}
+```
+
+## 검증 패턴
+
+### 입력 검증
+생성자에서 항상 입력 검증:
+```kotlin
+@JvmInline
+value class Quantity(val value: Int) {
+    init {
+        require(value > 0) { "Quantity must be positive" }
+    }
+}
+```
+
+### 복잡한 검증
+복잡한 검증 규칙의 경우:
+```kotlin
+@JvmInline
+value class Email(val value: String) {
+    init {
+        require(value.isNotBlank()) { "Email cannot be blank" }
+        require(value.matches(EMAIL_REGEX)) { "Invalid email format" }
+        require(value.length <= MAX_EMAIL_LENGTH) { "Email length cannot exceed $MAX_EMAIL_LENGTH characters" }
+    }
+}
+```
+
+### 비즈니스 규칙 검증
+검증에 비즈니스 규칙 포함:
+```kotlin
+@JvmInline
+value class Stock(val quantity: Int) {
+    init {
+        require(quantity >= 0) { "Stock quantity cannot be negative" }
+    }
+    
+    fun hasEnough(required: Quantity): Boolean = quantity >= required.value
+    fun reduce(amount: Quantity): Stock {
+        require(hasEnough(amount)) { "Not enough stock to reduce by ${amount.value}" }
+        return Stock(quantity - amount.value)
+    }
+}
+```
+
+## 팩토리 메서드
+
+### 표준 팩토리 메서드
+```kotlin
+companion object {
+    fun of(value: PrimitiveType): ValueObjectName = ValueObjectName(value)
+    fun safeOf(value: PrimitiveType?): ValueObjectName? = value?.let { ValueObjectName(it) }
+}
+```
+
+### 다중 타입 지원
+여러 타입에서 생성 가능한 값 객체의 경우:
+```kotlin
+companion object {
+    fun of(value: BigDecimal) = Money(value)
+    fun of(value: Long) = Money(BigDecimal(value))
+    fun of(value: Double) = Money(BigDecimal(value).setScale(2, RoundingMode.HALF_UP))
+    fun of(value: String) = Money(BigDecimal(value))
+}
+```
+
+### 특화된 팩토리 메서드
+```kotlin
+companion object {
+    fun zero() = Money(BigDecimal.ZERO)
+    fun of(value: BigDecimal) = Money(value)
+    fun safeOf(value: BigDecimal?) = value?.let { Money(it) }
+}
+```
+
+## 연산자 오버로딩
+
+### 산술 연산자
+```kotlin
+operator fun plus(other: Money): Money = Money(amount.add(other.amount))
+operator fun minus(other: Money): Money = Money(amount.subtract(other.amount))
+operator fun times(multiplier: BigDecimal): Money = Money(amount.multiply(multiplier).setScale(2, RoundingMode.HALF_UP))
+```
+
+### 비교 연산자
+```kotlin
+operator fun compareTo(other: Money): Int = amount.compareTo(other.amount)
+```
+
+### 동등성
+값 객체는 래핑된 값을 기반으로 자동으로 동등성을 얻습니다:
+```kotlin
+val money1 = Money.of(100)
+val money2 = Money.of(100)
+money1 == money2 // true
+```
+
+## 비즈니스 메서드
+
+### 도메인 특화 메서드
+비즈니스 의도를 표현하는 메서드 추가:
+```kotlin
+fun isFromDomain(domain: String): Boolean = value.lowercase().endsWith("@${domain.lowercase()}")
+fun getLocalPart(): String = value.substringBefore("@")
+fun getDomainPart(): String = value.substringAfter("@")
+```
+
+### 상태 확인 메서드
+```kotlin
+fun hasEnough(required: Quantity): Boolean = quantity >= required.value
+fun isEmpty(): Boolean = quantity == 0
+```
+
+### 변환 메서드
+```kotlin
+fun toLowerCase(): Email = Email(value.lowercase())
+fun reduce(amount: Quantity): Stock = Stock(quantity - amount.value)
+```
+
+## Value Objects 테스트
+
+### 생성 테스트
+```kotlin
+context("ValueObject 생성") {
+    test("정상적인 값으로 생성할 수 있어야 한다") {
+        // Given & When
+        val valueObject = ValueObject("valid")
+        
+        // Then
+        valueObject.value shouldBe "valid"
+    }
+    
+    test("잘못된 값으로 생성 시 예외가 발생해야 한다") {
+        // Given & When & Then
+        shouldThrow<IllegalArgumentException> {
+            ValueObject("invalid")
+        }
+    }
+}
+```
+
+### 팩토리 메서드 테스트
+```kotlin
+test("companion object의 of 메서드로 생성할 수 있어야 한다") {
+    // Given & When
+    val valueObject = ValueObject.of("test")
+    
+    // Then
+    valueObject.value shouldBe "test"
+}
+
+test("safeOf 메서드가 올바르게 작동해야 한다") {
+    // Given & When
+    val validValue = ValueObject.safeOf("valid")
+    val invalidValue = ValueObject.safeOf("invalid")
+    val nullValue = ValueObject.safeOf(null)
+    
+    // Then
+    validValue shouldNotBe null
+    validValue?.value shouldBe "valid"
+    invalidValue shouldBe null
+    nullValue shouldBe null
+}
+```
+
+### 비즈니스 메서드 테스트
+```kotlin
+context("비즈니스 메서드") {
+    test("메서드가 올바르게 작동해야 한다") {
+        // Given
+        val valueObject = ValueObject("test@example.com")
+        
+        // When
+        val result = valueObject.businessMethod()
+        
+        // Then
+        result shouldBe expectedResult
+    }
+}
+```
+
+### 비교 테스트
+```kotlin
+context("비교 연산") {
+    test("비교가 올바르게 작동해야 한다") {
+        // Given
+        val value1 = ValueObject("a")
+        val value2 = ValueObject("b")
+        val value3 = ValueObject("a")
+        
+        // When & Then
+        (value1 < value2) shouldBe true
+        (value2 > value1) shouldBe true
+        (value1 == value3) shouldBe true
+    }
+}
+```
+
+## 성능 고려사항
+
+### @JvmInline의 장점
+- **제로 오버헤드**: 런타임에 래퍼 객체 할당 없음
+- **타입 안전성**: 컴파일 타임 타입 검사
+- **메모리 효율성**: 내부적으로 원시 타입 사용
+
+### @JvmInline 사용 시기
+- ✅ 작고 간단한 값 객체
+- ✅ 자주 생성되는 객체
+- ✅ 성능이 중요한 코드 경로
+- ❌ 많은 메서드를 가진 복잡한 객체
+- ❌ 상속이 필요한 객체
+
+## 일반적인 패턴
+
+### ID 값 객체
+```kotlin
+@JvmInline
+value class EntityId(val value: Long) {
+    init {
+        require(value > 0) { "EntityId must be positive" }
+    }
+    
+    companion object {
+        fun of(value: Long): EntityId {
+            require(value > 0) { "EntityId must be positive" }
+            return EntityId(value)
+        }
+    }
+}
+```
+
+### 문자열 값 객체
+```kotlin
+@JvmInline
+value class Email(val value: String) {
+    init {
+        require(value.isNotBlank()) { "Email cannot be blank" }
+        require(value.matches(EMAIL_REGEX)) { "Invalid email format" }
+    }
+    
+    companion object {
+        private val EMAIL_REGEX = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$".toRegex()
+    }
+}
+```
+
+### 숫자 값 객체
+```kotlin
+@JvmInline
+value class Money(val amount: BigDecimal) {
+    init {
+        require(amount >= BigDecimal.ZERO) { "Money amount cannot be negative" }
+    }
+    
+    operator fun plus(other: Money): Money = Money(amount.add(other.amount))
+}
+```
+
+이 접근법은 비즈니스 개념을 정확히 표현하는 타입 안전하고 성능이 좋으며 유지보수 가능한 값 객체를 보장합니다.
