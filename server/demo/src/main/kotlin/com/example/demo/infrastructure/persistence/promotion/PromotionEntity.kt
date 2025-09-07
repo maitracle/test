@@ -64,7 +64,7 @@ data class PromotionEntity(
     val targetUserLevel: String? = null,
     
     @Column
-    val isNewCustomerOnly: Boolean = false,
+    val isNewCustomerOnly: Boolean? = false,
     
     @Column(precision = 5, scale = 2)
     val discountPercentage: BigDecimal? = null,
@@ -242,7 +242,7 @@ data class PromotionEntity(
             minCartAmount: BigDecimal? = null,
             minQuantity: Int? = null,
             targetUserLevel: String? = null,
-            isNewCustomerOnly: Boolean = false,
+            isNewCustomerOnly: Boolean? = false,
             discountPercentage: BigDecimal? = null,
             discountAmount: BigDecimal? = null,
             maxDiscountAmount: BigDecimal? = null,
@@ -286,7 +286,7 @@ data class PromotionEntity(
             minCartAmount: BigDecimal?,
             minQuantity: Int?,
             targetUserLevel: String?,
-            isNewCustomerOnly: Boolean,
+            isNewCustomerOnly: Boolean?,
             discountPercentage: BigDecimal?,
             discountAmount: BigDecimal?,
             maxDiscountAmount: BigDecimal?,

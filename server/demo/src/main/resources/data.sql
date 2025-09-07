@@ -102,176 +102,176 @@ INSERT INTO promotions (
 -- 이벤트 할인 (최우선순위) - TC-015, TC-021 등에서 사용
 INSERT INTO promotions (
     id, name, description, type, priority, is_active,
-    start_date, end_date, discount_percentage,
+    start_date, end_date, is_new_customer_only, discount_percentage,
     created_at, updated_at
 ) VALUES (
     2, '블랙프라이데이 1+1', '블랙프라이데이 이벤트 1+1 프로모션', 'BUY_ONE_GET_ONE', 1, true,
-    CURRENT_TIMESTAMP, CURRENT_TIMESTAMP + INTERVAL '7' DAY, 50.00,
+    CURRENT_TIMESTAMP, CURRENT_TIMESTAMP + INTERVAL '7' DAY, false, 50.00,
     CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
 );
 
 -- 특정 상품 할인 - TC-006 등에서 사용
 INSERT INTO promotions (
     id, name, description, type, priority, is_active,
-    start_date, end_date, discount_percentage,
+    start_date, end_date, is_new_customer_only, discount_percentage,
     created_at, updated_at
 ) VALUES (
     3, '상품A 10% 할인', '특정 상품 10% 할인', 'PERCENTAGE_DISCOUNT', 5, true,
-    CURRENT_TIMESTAMP, CURRENT_TIMESTAMP + INTERVAL '30' DAY, 10.00,
+    CURRENT_TIMESTAMP, CURRENT_TIMESTAMP + INTERVAL '30' DAY, false, 10.00,
     CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
 );
 
 -- 브랜드별 할인 - TC-007 등에서 사용
 INSERT INTO promotions (
     id, name, description, type, priority, is_active,
-    start_date, end_date, discount_percentage,
+    start_date, end_date, is_new_customer_only, discount_percentage,
     created_at, updated_at
 ) VALUES (
     4, '브랜드X 15% 할인', '브랜드X 상품 15% 할인', 'PERCENTAGE_DISCOUNT', 5, true,
-    CURRENT_TIMESTAMP, CURRENT_TIMESTAMP + INTERVAL '30' DAY, 15.00,
+    CURRENT_TIMESTAMP, CURRENT_TIMESTAMP + INTERVAL '30' DAY, false, 15.00,
     CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
 );
 
 -- 카테고리 최소 구매액 할인 - TC-008 등에서 사용
 INSERT INTO promotions (
     id, name, description, type, priority, is_active,
-    start_date, end_date, target_category, min_cart_amount, discount_amount,
+    start_date, end_date, target_category, min_cart_amount, is_new_customer_only, discount_amount,
     created_at, updated_at
 ) VALUES (
     5, '뷰티 카테고리 할인', '뷰티 50,000원 이상 구매 시 5,000원 할인', 'FIXED_DISCOUNT', 3, true,
-    CURRENT_TIMESTAMP, CURRENT_TIMESTAMP + INTERVAL '30' DAY, '뷰티', 50000.00, 5000.00,
+    CURRENT_TIMESTAMP, CURRENT_TIMESTAMP + INTERVAL '30' DAY, '뷰티', 50000.00, false, 5000.00,
     CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
 );
 
 -- 카테고리 수량 기반 할인 - TC-009 등에서 사용
 INSERT INTO promotions (
     id, name, description, type, priority, is_active,
-    start_date, end_date, target_category, min_quantity, discount_percentage,
+    start_date, end_date, target_category, min_quantity, is_new_customer_only, discount_percentage,
     created_at, updated_at
 ) VALUES (
     6, '식품 수량 할인', '식품 3개 이상 구매 시 10% 할인', 'PERCENTAGE_DISCOUNT', 3, true,
-    CURRENT_TIMESTAMP, CURRENT_TIMESTAMP + INTERVAL '30' DAY, '식품', 3, 10.00,
+    CURRENT_TIMESTAMP, CURRENT_TIMESTAMP + INTERVAL '30' DAY, '식품', 3, false, 10.00,
     CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
 );
 
 -- 장바구니 최소 금액 할인 - TC-010 등에서 사용
 INSERT INTO promotions (
     id, name, description, type, priority, is_active,
-    start_date, end_date, min_cart_amount, discount_percentage,
+    start_date, end_date, min_cart_amount, is_new_customer_only, discount_percentage,
     created_at, updated_at
 ) VALUES (
     7, '장바구니 10% 할인', '100,000원 이상 구매 시 10% 할인', 'PERCENTAGE_DISCOUNT', 4, true,
-    CURRENT_TIMESTAMP, CURRENT_TIMESTAMP + INTERVAL '30' DAY, 100000.00, 10.00,
+    CURRENT_TIMESTAMP, CURRENT_TIMESTAMP + INTERVAL '30' DAY, 100000.00, false, 10.00,
     CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
 );
 
 -- 무료 배송 - TC-011 등에서 사용
 INSERT INTO promotions (
     id, name, description, type, priority, is_active,
-    start_date, end_date, min_cart_amount,
+    start_date, end_date, min_cart_amount, is_new_customer_only,
     created_at, updated_at
 ) VALUES (
     8, '무료 배송', '50,000원 이상 구매 시 무료 배송', 'FREE_SHIPPING', 5, true,
-    CURRENT_TIMESTAMP, CURRENT_TIMESTAMP + INTERVAL '30' DAY, 50000.00,
+    CURRENT_TIMESTAMP, CURRENT_TIMESTAMP + INTERVAL '30' DAY, 50000.00, false,
     CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
 );
 
 -- VIP 회원 할인 - TC-020, TC-022 등에서 사용
 INSERT INTO promotions (
     id, name, description, type, priority, is_active,
-    start_date, end_date, target_user_level, discount_percentage,
+    start_date, end_date, target_user_level, is_new_customer_only, discount_percentage,
     created_at, updated_at
 ) VALUES (
     9, 'VIP 회원 할인', 'VIP 회원 5% 할인', 'PERCENTAGE_DISCOUNT', 3, true,
-    CURRENT_TIMESTAMP, CURRENT_TIMESTAMP + INTERVAL '30' DAY, 'VIP', 5.00,
+    CURRENT_TIMESTAMP, CURRENT_TIMESTAMP + INTERVAL '30' DAY, 'VIP', false, 5.00,
     CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
 );
 
 -- X카드 할인 - TC-012, TC-020 등에서 사용
 INSERT INTO promotions (
     id, name, description, type, priority, is_active,
-    start_date, end_date, discount_percentage,
+    start_date, end_date, is_new_customer_only, discount_percentage,
     created_at, updated_at
 ) VALUES (
     10, 'X카드 할인', 'X카드 결제 시 10% 할인', 'PERCENTAGE_DISCOUNT', 3, true,
-    CURRENT_TIMESTAMP, CURRENT_TIMESTAMP + INTERVAL '30' DAY, 10.00,
+    CURRENT_TIMESTAMP, CURRENT_TIMESTAMP + INTERVAL '30' DAY, false, 10.00,
     CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
 );
 
 -- 주말 할인 - TC-013, TC-022 등에서 사용
 INSERT INTO promotions (
     id, name, description, type, priority, is_active,
-    start_date, end_date, discount_percentage,
+    start_date, end_date, is_new_customer_only, discount_percentage,
     created_at, updated_at
 ) VALUES (
     11, '주말 할인', '주말 결제 시 5% 할인', 'PERCENTAGE_DISCOUNT', 4, true,
-    CURRENT_TIMESTAMP, CURRENT_TIMESTAMP + INTERVAL '30' DAY, 5.00,
+    CURRENT_TIMESTAMP, CURRENT_TIMESTAMP + INTERVAL '30' DAY, false, 5.00,
     CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
 );
 
 -- 세트 할인 (카테고리 할인과 중복 불가) - TC-017 등에서 사용
 INSERT INTO promotions (
     id, name, description, type, priority, is_active,
-    start_date, end_date, discount_percentage,
+    start_date, end_date, is_new_customer_only, discount_percentage,
     created_at, updated_at
 ) VALUES (
     12, '세트 할인', '식품 2개 + 생활용품 1개 구매 시 20% 할인', 'PERCENTAGE_DISCOUNT', 2, true,
-    CURRENT_TIMESTAMP, CURRENT_TIMESTAMP + INTERVAL '30' DAY, 20.00,
+    CURRENT_TIMESTAMP, CURRENT_TIMESTAMP + INTERVAL '30' DAY, false, 20.00,
     CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
 );
 
 -- 프리미엄 회원 할인 - TC-022 등에서 사용
 INSERT INTO promotions (
     id, name, description, type, priority, is_active,
-    start_date, end_date, target_user_level, discount_percentage,
+    start_date, end_date, target_user_level, is_new_customer_only, discount_percentage,
     created_at, updated_at
 ) VALUES (
     13, '프리미엄 회원 할인', '프리미엄 회원 7% 할인', 'PERCENTAGE_DISCOUNT', 3, true,
-    CURRENT_TIMESTAMP, CURRENT_TIMESTAMP + INTERVAL '30' DAY, 'PREMIUM', 7.00,
+    CURRENT_TIMESTAMP, CURRENT_TIMESTAMP + INTERVAL '30' DAY, 'PREMIUM', false, 7.00,
     CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
 );
 
 -- 캐시백 프로모션 - TC-022 등에서 사용
 INSERT INTO promotions (
     id, name, description, type, priority, is_active,
-    start_date, end_date, discount_percentage,
+    start_date, end_date, is_new_customer_only, discount_percentage,
     created_at, updated_at
 ) VALUES (
     14, '캐시백 프로모션', '구매 금액의 3% 캐시백', 'CASHBACK', 5, true,
-    CURRENT_TIMESTAMP, CURRENT_TIMESTAMP + INTERVAL '30' DAY, 3.00,
+    CURRENT_TIMESTAMP, CURRENT_TIMESTAMP + INTERVAL '30' DAY, false, 3.00,
     CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
 );
 
 -- 비활성화된 프로모션 (TC-005 등에서 사용)
 INSERT INTO promotions (
     id, name, description, type, priority, is_active,
-    start_date, end_date, discount_percentage,
+    start_date, end_date, is_new_customer_only, discount_percentage,
     created_at, updated_at
 ) VALUES (
     15, '비활성화된 프로모션', '비활성화된 테스트 프로모션', 'PERCENTAGE_DISCOUNT', 3, false,
-    CURRENT_TIMESTAMP, CURRENT_TIMESTAMP + INTERVAL '30' DAY, 10.00,
+    CURRENT_TIMESTAMP, CURRENT_TIMESTAMP + INTERVAL '30' DAY, false, 10.00,
     CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
 );
 
 -- 만료된 프로모션 (TC-005 등에서 사용)
 INSERT INTO promotions (
     id, name, description, type, priority, is_active,
-    start_date, end_date, discount_percentage,
+    start_date, end_date, is_new_customer_only, discount_percentage,
     created_at, updated_at
 ) VALUES (
     16, '만료된 프로모션', '만료된 테스트 프로모션', 'PERCENTAGE_DISCOUNT', 3, true,
-    CURRENT_TIMESTAMP - INTERVAL '60' DAY, CURRENT_TIMESTAMP - INTERVAL '30' DAY, 10.00,
+    CURRENT_TIMESTAMP - INTERVAL '60' DAY, CURRENT_TIMESTAMP - INTERVAL '30' DAY, false, 10.00,
     CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
 );
 
 -- 미래 프로모션 (TC-005 등에서 사용)
 INSERT INTO promotions (
     id, name, description, type, priority, is_active,
-    start_date, end_date, discount_percentage,
+    start_date, end_date, is_new_customer_only, discount_percentage,
     created_at, updated_at
 ) VALUES (
     17, '미래 프로모션', '미래에 시작될 프로모션', 'PERCENTAGE_DISCOUNT', 3, true,
-    CURRENT_TIMESTAMP + INTERVAL '30' DAY, CURRENT_TIMESTAMP + INTERVAL '60' DAY, 10.00,
+    CURRENT_TIMESTAMP + INTERVAL '30' DAY, CURRENT_TIMESTAMP + INTERVAL '60' DAY, false, 10.00,
     CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
 );
 

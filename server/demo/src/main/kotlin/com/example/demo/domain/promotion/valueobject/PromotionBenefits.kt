@@ -17,9 +17,6 @@ data class PromotionBenefits(
 ) {
     
     init {
-        require(discountPercentage != null || discountAmount != null) {
-            "At least one discount type must be specified"
-        }
         require(!(discountPercentage != null && discountAmount != null)) {
             "Cannot specify both percentage and fixed amount discount"
         }

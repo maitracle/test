@@ -78,7 +78,7 @@ private fun PromotionEntity.toDomain(): Promotion {
             minCartAmount = minCartAmount?.let { com.example.demo.domain.common.valueobject.Money.of(it) },
             minQuantity = minQuantity?.let { com.example.demo.domain.common.valueobject.Quantity.of(it) },
             targetUserLevel = targetUserLevel?.let { com.example.demo.domain.user.valueobject.MembershipLevel.valueOf(it) },
-            isNewCustomerOnly = isNewCustomerOnly
+            isNewCustomerOnly = isNewCustomerOnly ?: false
         ),
         benefits = com.example.demo.domain.promotion.valueobject.PromotionBenefits(
             discountPercentage = discountPercentage?.let { com.example.demo.domain.promotion.valueobject.DiscountPercentage.of(it) },
