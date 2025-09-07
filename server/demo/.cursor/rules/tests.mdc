@@ -1,6 +1,7 @@
 ---
-globs: *.kt
 description: Kotlin Spring Boot 프로젝트에서 Kotest와 MockK를 사용한 테스트 코드 작성 규칙. 단위 테스트, 통합 테스트, REST API 테스트 작성 방법과 일반적인 실수 방지 가이드라인을 포함합니다.
+globs:
+alwaysApply: false
 ---
 
 # 테스트 코드 작성 규칙
