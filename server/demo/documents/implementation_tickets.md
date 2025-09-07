@@ -153,7 +153,8 @@ src/main/kotlin/com/example/demo/domain/promotion/
 │   ├── Discount.kt
 │   ├── DiscountPercentage.kt
 │   ├── DiscountAmount.kt
-│   ├── PromotionPeriod.kt
+│   ├── PromotionPeriod.kts
+
 │   ├── PromotionConditions.kt
 │   └── PromotionBenefits.kt
 └── service/
