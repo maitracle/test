@@ -32,11 +32,12 @@ dependencies {
 	testImplementation("io.kotest:kotest-assertions-core:5.8.0")
 	testImplementation("io.kotest:kotest-property:5.8.0")
 	testImplementation("io.kotest.extensions:kotest-extensions-spring:1.1.3")
-	testImplementation("io.mockk:mockk:1.13.8")
+	testImplementation("io.mockk:mockk:1.14.3")
 	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
 kotlin {
+	jvmToolchain(21)
 	compilerOptions {
 		freeCompilerArgs.addAll("-Xjsr305=strict")
 	}

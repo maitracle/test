@@ -25,13 +25,13 @@ class CreateUserUseCase(
      * @return 생성된 사용자 정보
      */
     fun execute(request: CreateUserRequest): UserResponse {
-        // 1. 요청 유효성 검증
-        validateCreateRequest(request)
+        // 1. 요청 유효성 검증 및 이메일 객체 생성
+        val email = validateCreateRequest(request)
         
-        // 2. 사용자 도메인 모델 생성
+        // 2. 사용자 도메인 모델 생성 (임시 ID 사용)
         val user = User(
-            id = UserId(0), // 새 사용자
-            email = Email(request.email),
+            id = UserId(1L), // 임시 ID, 저장 시 실제 ID로 교체됨
+            email = email,
             membershipLevel = MembershipLevel.valueOf(request.membershipLevel),
             isNewCustomer = request.isNewCustomer,
             createdAt = LocalDateTime.now()
@@ -47,11 +47,14 @@ class CreateUserUseCase(
     /**
      * 사용자 생성 요청 유효성 검증을 수행합니다.
      * @param request 사용자 생성 요청
+     * @return 검증된 이메일 객체
      * @throws IllegalArgumentException 유효성 검증 실패 시
      */
-    private fun validateCreateRequest(request: CreateUserRequest) {
-        // 이메일 중복 확인
+    private fun validateCreateRequest(request: CreateUserRequest): Email {
+        // 이메일 유효성 검증 (Email 생성자에서 자동으로 검증됨)
         val email = Email(request.email)
+        
+        // 이메일 중복 확인
         if (userRepository.existsByEmail(email)) {
             throw IllegalArgumentException("이미 존재하는 이메일입니다: ${request.email}")
         }
@@ -62,6 +65,8 @@ class CreateUserUseCase(
         } catch (e: IllegalArgumentException) {
             throw IllegalArgumentException("유효하지 않은 멤버십 레벨입니다: ${request.membershipLevel}")
         }
+        
+        return email
     }
     
     /**

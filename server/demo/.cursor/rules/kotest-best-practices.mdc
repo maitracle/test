@@ -226,6 +226,83 @@ test("고정 시간 테스트") {
 }
 ```
 
+## MockK 사용 모범 사례
+
+### 1. Mock 인스턴스 관리
+```kotlin
+class UseCaseTest : FunSpec({
+    // ✅ 좋은 예: Mock 인스턴스를 한 번만 생성하고 재사용
+    val repository = mockk<Repository>()
+    val useCase = UseCase(repository)
+    
+    beforeEach {
+        // 각 테스트 전에 Mock 호출 기록만 초기화
+        clearMocks(repository)
+    }
+    
+    // ❌ 나쁜 예: 매번 새로운 Mock 인스턴스 생성
+    // beforeEach {
+    //     val repository = mockk<Repository>()
+    //     val useCase = UseCase(repository)
+    // }
+})
+```
+
+### 2. Mock 설정 규칙
+```kotlin
+// ❌ 나쁜 예: relaxed 모드 사용 (예상하지 못한 값 생성)
+val repository = mockk<Repository>(relaxed = true)
+
+// ✅ 좋은 예: 명시적 mocking 설정
+val repository = mockk<Repository>()
+every { repository.findById(any()) } returns Optional.empty()
+every { repository.save(any()) } returns savedEntity
+every { repository.existsByEmail(any()) } returns false
+```
+
+### 3. Mock 검증 패턴
+```kotlin
+test("사용자 생성 성공") {
+    // Given
+    val request = CreateUserRequest(email = "test@example.com")
+    val savedUser = createTestUser()
+    
+    every { repository.existsByEmail(any()) } returns false
+    every { repository.save(any()) } returns savedUser
+    
+    // When
+    val result = useCase.execute(request)
+    
+    // Then
+    result.email shouldBe "test@example.com"
+    verify { repository.existsByEmail(Email("test@example.com")) }
+    verify { repository.save(any()) }
+}
+
+test("이미 존재하는 이메일로 사용자 생성 실패") {
+    // Given
+    val request = CreateUserRequest(email = "existing@example.com")
+    
+    every { repository.existsByEmail(Email("existing@example.com")) } returns true
+    
+    // When & Then
+    shouldThrow<IllegalArgumentException> {
+        useCase.execute(request)
+    }
+    
+    verify { repository.existsByEmail(Email("existing@example.com")) }
+    // verify(exactly = 0)는 clearMocks()로 인해 불필요
+}
+```
+
+### 4. MockK Import 규칙
+```kotlin
+import io.mockk.clearMocks
+import io.mockk.every
+import io.mockk.mockk
+import io.mockk.verify
+```
+
 ## 테스트 정리 및 유지보수
 
 ### 1. 테스트 그룹화
@@ -337,6 +414,61 @@ test("프로모션 효율성 평가") {
     // Then
     efficiency shouldBe 0.367 // 실제 계산된 효율성 (약 36.7%)
 }
+```
+
+## 일반적인 테스트 실패 원인과 해결 방법
+
+### 1. MockK 관련 문제
+**문제**: `relaxed = true` 사용으로 인한 예상하지 못한 값 생성
+```kotlin
+// ❌ 문제가 되는 코드
+val repository = mockk<Repository>(relaxed = true)
+```
+**해결**: 명시적 mocking 설정
+```kotlin
+// ✅ 해결된 코드
+val repository = mockk<Repository>()
+every { repository.findById(any()) } returns Optional.empty()
+```
+
+### 2. Mock 검증 실패
+**문제**: 이전 테스트의 호출 기록이 남아있어 `verify(exactly = 0)` 실패
+**해결**: `clearMocks()` 사용
+```kotlin
+beforeEach {
+    clearMocks(repository)
+}
+```
+
+### 3. Mock 인스턴스 재생성 비효율성
+**문제**: 매번 새로운 Mock 인스턴스 생성
+```kotlin
+// ❌ 비효율적인 코드
+beforeEach {
+    val repository = mockk<Repository>()
+    val useCase = UseCase(repository)
+}
+```
+**해결**: Mock 인스턴스 재사용
+```kotlin
+// ✅ 효율적인 코드
+val repository = mockk<Repository>()
+val useCase = UseCase(repository)
+
+beforeEach {
+    clearMocks(repository)
+}
+```
+
+### 4. 도메인 객체 검증 문제
+**문제**: `UserId(0)` 사용으로 인한 검증 실패
+**해결**: 유효한 값 사용
+```kotlin
+// ❌ 문제가 되는 코드
+val user = User(id = UserId(0), ...)
+
+// ✅ 해결된 코드
+val user = User(id = UserId(1L), ...)
 ```
 
 이 가이드를 따라하면 Kotest를 사용한 효과적이고 유지보수 가능한 테스트 코드를 작성할 수 있습니다.
