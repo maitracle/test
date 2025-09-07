@@ -1,6 +1,7 @@
 package com.example.demo.domain.promotion.service
 
 import com.example.demo.domain.cart.model.Cart
+import com.example.demo.domain.common.valueobject.Money
 import com.example.demo.domain.promotion.model.Promotion
 import com.example.demo.domain.promotion.valueobject.Discount
 import com.example.demo.domain.user.model.User
@@ -93,7 +94,12 @@ class PromotionCalculator {
             }
         }
         
-        val finalAmount = cart.totalAmount - totalDiscount.amount
+        // 최종 금액이 음수가 되지 않도록 보장 (할인 금액이 상품 가격보다 클 수 없음)
+        val finalAmount = if (totalDiscount.amount > cart.totalAmount) {
+            Money.zero()
+        } else {
+            cart.totalAmount - totalDiscount.amount
+        }
         
         return PromotionResult(
             subtotal = cart.totalAmount.amount,

@@ -42,12 +42,10 @@ import java.time.LocalDateTime
 class PromotionEngineTest : FunSpec({
     
     val promotionRepository = mockk<PromotionRepository>()
-    val promotionCalculator = mockk<PromotionCalculator>()
-    val promotionRuleEngine = mockk<PromotionRuleEngine>()
-    val promotionEngine = PromotionEngine(promotionRepository, promotionCalculator, promotionRuleEngine)
+    val promotionEngine = PromotionEngine(promotionRepository)
     
     beforeEach {
-        clearMocks(promotionRepository, promotionCalculator, promotionRuleEngine)
+        clearMocks(promotionRepository)
     }
     
     val sampleProduct = Product(
