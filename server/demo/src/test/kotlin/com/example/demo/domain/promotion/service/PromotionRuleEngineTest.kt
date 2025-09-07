@@ -299,35 +299,35 @@ class PromotionRuleEngineTest : DescribeSpec({
         }
     }
     
-    // describe("PromotionRuleEngine 효율성 평가") {
-    //     it("프로모션의 효율성을 평가할 수 있어야 한다") {
-    //         // Given
-    //         val ruleEngine = PromotionRuleEngine()
-    //         val promotion = createTestPromotion()
-    //         val cart = createTestCart()
-    //         val user = createTestUser()
+    describe("PromotionRuleEngine 효율성 평가") {
+        it("프로모션의 효율성을 평가할 수 있어야 한다") {
+            // Given
+            val ruleEngine = PromotionRuleEngine()
+            val promotion = createTestPromotion()
+            val cart = createTestCart()
+            val user = createTestUser()
             
-    //         // When
-    //         val efficiency = ruleEngine.evaluatePromotionEfficiency(promotion, cart, user)
+            // When
+            val efficiency = ruleEngine.evaluatePromotionEfficiency(promotion, cart, user)
             
-    //         // Then
-    //         efficiency shouldBe 0.0 // 효율성은 0 이상 1 이하여야 함
-    //     }
+            // Then
+            efficiency shouldBe 0.0 // 효율성은 0 이상 1 이하여야 함
+        }
         
-    //     it("적용 불가능한 프로모션의 효율성은 0이어야 한다") {
-    //         // Given
-    //         val ruleEngine = PromotionRuleEngine()
-    //         val promotion = createTestPromotion().deactivate()
-    //         val cart = createTestCart()
-    //         val user = createTestUser()
+        it("적용 불가능한 프로모션의 효율성은 0이어야 한다") {
+            // Given
+            val ruleEngine = PromotionRuleEngine()
+            val promotion = createTestPromotion().deactivate()
+            val cart = createTestCart()
+            val user = createTestUser()
             
-    //         // When
-    //         val efficiency = ruleEngine.evaluatePromotionEfficiency(promotion, cart, user)
+            // When
+            val efficiency = ruleEngine.evaluatePromotionEfficiency(promotion, cart, user)
             
-    //         // Then
-    //         efficiency shouldBe 0.0
-    //     }
-    // }
+            // Then
+            efficiency shouldBe 0.0
+        }
+    }
     
     describe("RuleEvaluationResult") {
         it("모든 규칙이 통과했는지 확인할 수 있어야 한다") {
