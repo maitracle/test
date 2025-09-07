@@ -1,0 +1,172 @@
+---
+description: Kotlin Spring Boot 프로젝트에서 Kotest와 MockK를 사용한 테스트 코드 작성 규칙. 단위 테스트, 통합 테스트, REST API 테스트 작성 방법과 일반적인 실수 방지 가이드라인을 포함합니다.
+globs:
+alwaysApply: false
+---
+
+# 테스트 코드 작성 규칙
+
+## 1. 테스트 코드 작성 전 체크리스트
+
+### 필수 확인사항
+- [ ] 대상 클래스의 생성자 시그니처 확인
+- [ ] 모든 필수 매개변수 파악
+- [ ] 선택적 매개변수의 기본값 확인
+- [ ] 예외 발생 조건 파악
+- [ ] 필요한 import 문 확인
+
+### 생성자 테스트 작성 시
+- 모든 매개변수를 명시적으로 전달
+- null 허용 필드는 `null` 값 명시
+- 시간 기반 필드는 동일한 값 사용 (`val now = LocalDateTime.now()`)
+
+## 2. Kotest 테스트 작성 규칙
+
+### 구조
+```kotlin
+class ClassNameTest : DescribeSpec({
+    describe("클래스명") {
+        context("상황 설명") {
+            it("기대하는 동작") {
+                // Given-When-Then 패턴
+            }
+        }
+    }
+})
+```
+
+### 필수 import
+```kotlin
+import io.kotest.core.spec.style.DescribeSpec
+import io.kotest.matchers.shouldBe
+import io.kotest.matchers.shouldNotBe
+import io.kotest.matchers.nulls.shouldBeNull
+import io.kotest.matchers.nulls.shouldNotBeNull
+import io.kotest.matchers.booleans.shouldBeTrue
+import io.kotest.matchers.booleans.shouldBeFalse
+import io.kotest.matchers.string.shouldContain
+import io.kotest.assertions.throwables.shouldThrow
+import io.kotest.matchers.types.shouldBeInstanceOf
+```
+
+## 3. MockK 사용 규칙
+
+### 기본 설정
+```kotlin
+val mockRepository = mockk<Repository>()
+val service = Service(mockRepository)
+
+beforeEach {
+    clearAllMocks()
+}
+```
+
+### 모킹 패턴
+```kotlin
+// 반환값 설정
+every { mockRepository.findById(id) } returns Optional.of(entity)
+
+// void 메서드
+every { mockRepository.save(entity) } just Runs
+
+// 검증
+verify { mockRepository.findById(id) }
+verify(exactly = 0) { mockRepository.delete(any()) }
+```
+
+## 4. MockMvc 테스트 규칙
+
+### 기본 설정
+```kotlin
+val mockService = mockk<Service>()
+val controller = Controller(mockService)
+val mockMvc = MockMvcBuilders.standaloneSetup(controller).build()
+val objectMapper = ObjectMapper()
+```
+
+### 테스트 패턴
+```kotlin
+mockMvc.perform(
+    post("/api/endpoint")
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(objectMapper.writeValueAsString(request))
+)
+    .andExpect(status().isOk)
+    .andExpect(jsonPath("$.field").value(expectedValue))
+```
+
+## 5. 예외 테스트 규칙
+
+### 예외 타입 확인
+- 실제 코드에서 발생하는 예외 타입 확인
+- `!!` 연산자 사용 시 `NullPointerException` 예상
+- 커스텀 예외는 정확한 타입 지정
+
+### 예외 테스트 패턴
+```kotlin
+shouldThrow<ExpectedExceptionType> {
+    methodThatThrowsException()
+}
+```
+
+## 6. 시간 기반 테스트 규칙
+
+### 동일한 시간 사용
+```kotlin
+val now = LocalDateTime.now()
+val entity1 = Entity(createdAt = now, updatedAt = now)
+val entity2 = Entity(createdAt = now, updatedAt = now)
+```
+
+### 시간 비교 테스트
+```kotlin
+entity.createdAt.shouldNotBeNull()
+entity.updatedAt.shouldNotBeNull()
+entity.createdAt shouldBe entity.updatedAt  // 생성 시점
+```
+
+## 7. 테스트 실행 전 체크리스트
+
+### 컴파일 확인
+- [ ] 모든 import 문 확인
+- [ ] 생성자 매개변수 완성
+- [ ] 타입 일치 확인
+
+### 테스트 실행
+- [ ] 단일 테스트 클래스 실행
+- [ ] 전체 테스트 실행
+- [ ] 실패한 테스트 분석
+
+## 8. 일반적인 실수 방지
+
+### 매개변수 누락 방지
+- IDE 자동완성 활용
+- 생성자 시그니처 복사-붙여넣기
+- 컴파일 오류 즉시 수정
+
+### 시간 기반 테스트
+- `LocalDateTime.now()` 직접 사용 금지
+- 공통 시간 변수 사용
+- equals 테스트 시 시간 필드 고려
+
+### 예외 테스트
+- 실제 예외 타입 확인
+- 예외 메시지 검증 고려
+- 예외 발생 조건 명확히 정의
+
+## 9. 테스트 코드 품질
+
+### 가독성
+- 한국어 테스트명 사용
+- Given-When-Then 패턴 준수
+- 의미있는 변수명 사용
+
+### 완전성
+- 정상 케이스와 예외 케이스 모두 테스트
+- 경계값 테스트 포함
+- 모든 public 메서드 테스트
+
+### 유지보수성
+- 중복 코드 제거
+- 공통 설정 추출
+- 명확한 테스트 구조
